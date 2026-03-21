@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Catalog.Core.Repositories
 {
-    public interface IProducrRepository
+    public interface IProductRepository
     {
         Task<IEnumerable<Product>> GetAllProducts();
         Task<IEnumerable<Product>> GetAllProductsByName( string name );
