@@ -1,8 +1,11 @@
 ﻿using Catalog.Core.Entities;
 using Catalog.Core.Repositories;
+using Catalog.Infrastructure.Data.Contexts;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,54 +13,86 @@ namespace Catalog.Infrastructure.Repositories
 {
     public class ProductRepository : IProductRepository, IBrandRepository, ITypeRepository
     {
+        public ICatalogContext _context {  get; set; }
+
+        // Inject  ICatalogContext  to be able to access Database 
+        public ProductRepository(ICatalogContext context) {
+
+         _context = context;
+        }
         // IProductRepository
-        public Task<Product> CreateProduct(Product product)
+        public async Task<IEnumerable<Product>> GetAllProducts()
         {
-            throw new NotImplementedException();
+            return await _context.Products.Find(p => true).ToListAsync();
+
+            // Find(p => true) أعطني كل العناصر بدون أي شرط 
+        }
+        public async Task<IEnumerable<Product>> GetAllProductsByBrand(string name)
+        {
+            return await _context.Products.Find(p => p.Brand.Name == name).ToListAsync();
+        }
+        public async Task<Product> GetProductById(string id)
+        {
+            return await _context.Products.Find(p => p.Id == id).FirstOrDefaultAsync();
+        }
+        public async Task<IEnumerable<Product>> GetAllProductsByName(string name)
+        {
+            return await _context.Products.Find(p=>p.Name == name).ToListAsync();
+        }
+        public async Task<Product> CreateProduct(Product product)
+        {
+             await _context.Products.InsertOneAsync(product);
+            return product;
         }
 
-        public Task<bool> DeleteProduct(string id)
+        public async Task<bool> DeleteProduct(string id)
         {
-            throw new NotImplementedException();
+           var deletedProduct = await _context.Products.DeleteOneAsync(p=>p.Id==id);
+            return deletedProduct.IsAcknowledged && deletedProduct.DeletedCount>0 ;
+            /*
+             * deletedProduct.IsAcknowledged && deletedProduct.DeletedCount > 0
+             ارجع true 
+            فقط إذا:"
+
+            العملية نجحت
+            (IsAcknowledged == true)
+            وتم حذف عنصر فعلاً
+            (DeletedCount > 0)
+
+             */
         }
 
-        public Task<IEnumerable<Product>> GetAllProducts()
+        public async Task<bool> UpdateProduct(Product product)
         {
-            throw new NotImplementedException();
+            var updatedProduct = await _context.Products.ReplaceOneAsync(p => p.Id == product.Id, product);
+            return updatedProduct.IsAcknowledged && updatedProduct.ModifiedCount > 0;
+            /*
+             "ارجع true إذا:"
+
+            return updatedProduct.IsAcknowledged && updatedProduct.ModifiedCount > 0;
+
+             العملية نجحت
+             وتم تعديل عنصر فعلاً
+
+             */
         }
-
-        public Task<IEnumerable<Product>> GetAllProductsByBrand(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IEnumerable<Product>> GetAllProductsByName(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        
-
-        public Task<Product> GetProductById(string id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<bool> UpdateProduct(Product product)
-        {
-            throw new NotImplementedException();
-        }
-
 
         // ITypeRepository
-        public Task<IEnumerable<ProductType>> GetAllTypes()
+        public async Task<IEnumerable<ProductType>> GetAllTypes()
         {
-            throw new NotImplementedException();
+           return await _context.Types.Find(t=>true).ToListAsync();
         }
         // IBrandRepository
-        public Task<IEnumerable<ProductBrand>> GetAllBrands()
+        public async Task<IEnumerable<ProductBrand>> GetAllBrands()
         {
-            throw new NotImplementedException();
+           return await _context.Brands.Find(b=>true).ToListAsync();
         }
+        
+
+        
+        
+
+
+       
     }
 }
